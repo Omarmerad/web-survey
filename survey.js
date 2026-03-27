@@ -19,7 +19,7 @@ const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
 const dataDir = process.env.DATA_DIR || (isVercel ? '/tmp' : __dirname);
 const DOCTORS_FILE = path.join(dataDir, 'survey_responses_doctors.json');
 const PATIENTS_FILE = path.join(dataDir, 'survey_responses_patients.json');
-const MONGODB_URI = process.env.MONGODB_URI;
+const   MONGODB_URI = process.env.MONGODB_URI;
 const useMongo = Boolean(MONGODB_URI);
 
 let mongoConnectPromise = null;
@@ -60,13 +60,41 @@ async function loadDataSafe(filePath) {
 }
 
 // 4. Helper: Convert JSON to CSV (For Excel)
+function isPlainObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function serializeValue(value) {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(' | ');
+    if (isPlainObject(value)) {
+        return Object.entries(value)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(' | ');
+    }
+    return String(value);
+}
+
 function convertToCSV(responses) {
     if (!responses || responses.length === 0) return '';
 
     // Collect all unique headers (questions) from all responses
     const headers = new Set(['ID', 'Date']);
     responses.forEach(r => {
-        if (r.data) Object.keys(r.data).forEach(k => headers.add(k));
+        if (!r.data) return;
+
+        Object.entries(r.data).forEach(([key, value]) => {
+            if (isPlainObject(value)) {
+                const nestedKeys = Object.keys(value);
+                if (nestedKeys.length === 0) {
+                    headers.add(key);
+                } else {
+                    nestedKeys.forEach(nestedKey => headers.add(`${key}.${nestedKey}`));
+                }
+            } else {
+                headers.add(key);
+            }
+        });
     });
     const headerArray = Array.from(headers);
 
@@ -76,10 +104,16 @@ function convertToCSV(responses) {
             let val;
             if (header === 'ID') val = r.id;
             else if (header === 'Date') val = r.date;
-            else val = (r.data || {})[header] || '';
+            else if (header.includes('.')) {
+                const [parentKey, childKey] = header.split('.');
+                const parentVal = (r.data || {})[parentKey];
+                val = isPlainObject(parentVal) ? parentVal[childKey] : '';
+            } else {
+                val = (r.data || {})[header] || '';
+            }
 
             // Clean up value: replace quotes and newlines so Excel doesn't break
-            const stringVal = String(val).replace(/"/g, '""').replace(/\n/g, ' ');
+            const stringVal = serializeValue(val).replace(/"/g, '""').replace(/\n/g, ' ');
             return `"${stringVal}"`;
         }).join(',');
     });
@@ -205,7 +239,16 @@ function generateResultsHTML(title, responses, type) {
         const safeData = r.data || {}; 
         let answers = '';
         for (const [k, v] of Object.entries(safeData)) {
-            answers += `<div style="margin:5px 0"><strong>${k}:</strong> <span style="color:#007bff">${v}</span></div>`;
+            let displayValue;
+            if (Array.isArray(v)) {
+                displayValue = v.join(', ');
+            } else if (isPlainObject(v)) {
+                displayValue = Object.entries(v).map(([subKey, subVal]) => `${subKey}: ${subVal}`).join(' | ');
+            } else {
+                displayValue = v;
+            }
+
+            answers += `<div style="margin:5px 0"><strong>${k}:</strong> <span style="color:#007bff">${displayValue}</span></div>`;
         }
         return `<div style="background:white; padding:15px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd">
             <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:10px; color:#666">#${i + 1} - ${r.date}</div>

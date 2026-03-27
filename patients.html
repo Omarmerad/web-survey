@@ -654,7 +654,7 @@
 
                 <!-- Question 9 -->
                 <div class="question" data-question="9">
-                    <h2>9. Quelles fonctionnalités vous seraient les plus utiles ? (Classer de 1 à 5, 1 = le plus utile) *</h2>
+                    <h2>9. Quelles fonctionnalités vous seraient les plus utiles ? (Classer de 1 à 5, 5 = le plus utile) *</h2>
                     <div class="options">
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 10px; font-weight: bold;">Suivre mes progrès dans le temps :</label>
@@ -918,6 +918,19 @@
             if (!currentQuestion) return;
             
             const questionKey = `q${currentQuestionIndex}`;
+
+            // Handle ranking radios for question 9
+            if (currentQuestionIndex === 9) {
+                formData[questionKey] = {};
+                const radioGroups = ['q9_progres', 'q9_commentaires', 'q9_rappels', 'q9_partage', 'q9_motivation'];
+                radioGroups.forEach(group => {
+                    const selectedRadio = currentQuestion.querySelector(`input[name="${group}"]:checked`);
+                    if (selectedRadio) {
+                        formData[questionKey][group] = selectedRadio.value;
+                    }
+                });
+                return;
+            }
             
             // Handle radio buttons
             const radioInputs = currentQuestion.querySelectorAll('input[type="radio"]:checked');
@@ -934,19 +947,7 @@
             // Handle text inputs and textareas
             const textInputs = currentQuestion.querySelectorAll('input[type="text"], textarea');
             if (textInputs.length > 0) {
-                // For question 9, we need to handle multiple radio groups
-                if (currentQuestionIndex === 9) {
-                    formData[questionKey] = {};
-                    const radioGroups = ['q9_progres', 'q9_commentaires', 'q9_rappels', 'q9_partage', 'q9_motivation'];
-                    radioGroups.forEach(group => {
-                        const selectedRadio = currentQuestion.querySelector(`input[name="${group}"]:checked`);
-                        if (selectedRadio) {
-                            formData[questionKey][group] = selectedRadio.value;
-                        }
-                    });
-                } else {
-                    formData[questionKey] = textInputs[0].value;
-                }
+                formData[questionKey] = textInputs[0].value;
             }
 
             // Handle additional text inputs for "other" options
@@ -1037,12 +1038,20 @@
             // Special validation for question 9 (ranking)
             if (currentQuestionIndex === 9) {
                 const rankingGroups = ['q9_progres', 'q9_commentaires', 'q9_rappels', 'q9_partage', 'q9_motivation'];
+                const values = [];
                 for (const group of rankingGroups) {
                     const hasSelection = currentQuestion.querySelector(`input[name="${group}"]:checked`);
                     if (!hasSelection) {
                         showError('Veuillez attribuer un rang à toutes les fonctionnalités avant de continuer.');
                         return false;
                     }
+                    values.push(parseInt(hasSelection.value, 10));
+                }
+
+                const uniqueValues = [...new Set(values)];
+                if (uniqueValues.length !== values.length) {
+                    showError('Veuillez attribuer des valeurs uniques de 1 à 5 (5 étant le plus utile).');
+                    return false;
                 }
             }
             
