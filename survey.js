@@ -10,8 +10,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname)); 
 
 // 2. File Paths
-const DOCTORS_FILE = path.join(__dirname, 'survey_responses_doctors.json');
-const PATIENTS_FILE = path.join(__dirname, 'survey_responses_patients.json');
+// On Vercel, the root file system is read-only, so we must use /tmp for temporary storage.
+// WARNING: Data saved in /tmp is EPHEMERAL and will be lost every time Vercel restarts the function.
+// For a production survey on Vercel, you *must* use a real Database (like MongoDB, Postgres, or Supabase).
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+const DOCTORS_FILE = isVercel ? path.join('/tmp', 'survey_responses_doctors.json') : path.join(__dirname, 'survey_responses_doctors.json');
+const PATIENTS_FILE = isVercel ? path.join('/tmp', 'survey_responses_patients.json') : path.join(__dirname, 'survey_responses_patients.json');
 
 // 3. Helper: Safely Load Data
 async function loadDataSafe(filePath) {
@@ -154,13 +158,19 @@ function generateResultsHTML(title, responses, type) {
     </body></html>`;
 }
 
-app.listen(PORT, async () => {
-    await initFiles();
-    console.log(`\n✅ Server Started!`);
-    console.log(`🏠 Home:      http://localhost:${PORT}`);
-    console.log(`👨‍⚕️ Doctors:   http://localhost:${PORT}/doctors`);
-    console.log(`👥 Patients:  http://localhost:${PORT}/patients`);
-    console.log(`📊 Doc-Results: http://localhost:${PORT}/doctors/results?pwd=Omar2020`);
-    console.log(`📊 Pat-Results: http://localhost:${PORT}/patients/results?pwd=Omar2020`); 
-});
+if (process.env.VERCEL) {
+    // Export the express app for Vercel Serverless Function
+    module.exports = app;
+} else {
+    // Start locally
+    app.listen(PORT, async () => {
+        await initFiles();
+        console.log(`\n✅ Server Started!`);
+        console.log(`🏠 Home:      http://localhost:${PORT}`);
+        console.log(`👨‍⚕️ Doctors:   http://localhost:${PORT}/doctors`);
+        console.log(`👥 Patients:  http://localhost:${PORT}/patients`);
+        console.log(`📊 Doc-Results: http://localhost:${PORT}/doctors/results?pwd=Omar2020`);
+        console.log(`📊 Pat-Results: http://localhost:${PORT}/patients/results?pwd=Omar2020`); 
+    });
+}
 
