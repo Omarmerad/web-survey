@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
+const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -18,6 +19,35 @@ const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
 const dataDir = process.env.DATA_DIR || (isVercel ? '/tmp' : __dirname);
 const DOCTORS_FILE = path.join(dataDir, 'survey_responses_doctors.json');
 const PATIENTS_FILE = path.join(dataDir, 'survey_responses_patients.json');
+const MONGODB_URI = process.env.MONGODB_URI;
+const useMongo = Boolean(MONGODB_URI);
+
+let mongoConnectPromise = null;
+
+const surveyResponseSchema = new mongoose.Schema({
+    type: { type: String, enum: ['doctors', 'patients'], required: true, index: true },
+    date: { type: String, required: true },
+    data: { type: mongoose.Schema.Types.Mixed, default: {} }
+});
+
+const SurveyResponse = mongoose.model('SurveyResponse', surveyResponseSchema);
+
+async function ensureMongoConnected() {
+    if (!useMongo) return false;
+    if (mongoose.connection.readyState === 1) return true;
+
+    if (!mongoConnectPromise) {
+        mongoConnectPromise = mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000
+        }).catch((err) => {
+            mongoConnectPromise = null;
+            throw err;
+        });
+    }
+
+    await mongoConnectPromise;
+    return true;
+}
 
 // 3. Helper: Safely Load Data
 async function loadDataSafe(filePath) {
@@ -65,6 +95,52 @@ async function initFiles() {
     try { await fs.access(PATIENTS_FILE); } catch { await fs.writeFile(PATIENTS_FILE, emptyData); }
 }
 
+function getTypeFile(type) {
+    return type === 'doctors' ? DOCTORS_FILE : PATIENTS_FILE;
+}
+
+async function saveResponse(type, body) {
+    const payload = { id: Date.now(), date: new Date().toLocaleString(), data: body };
+
+    if (useMongo) {
+        await ensureMongoConnected();
+        await SurveyResponse.create({ type, date: payload.date, data: payload.data });
+        return;
+    }
+
+    const file = getTypeFile(type);
+    const data = await loadDataSafe(file);
+    data.responses.push(payload);
+    await fs.writeFile(file, JSON.stringify(data, null, 2));
+}
+
+async function getResponses(type) {
+    if (useMongo) {
+        await ensureMongoConnected();
+        const docs = await SurveyResponse.find({ type }).sort({ _id: 1 }).lean();
+        return docs.map((doc, i) => ({
+            id: i + 1,
+            date: doc.date,
+            data: doc.data || {}
+        }));
+    }
+
+    const file = getTypeFile(type);
+    const data = await loadDataSafe(file);
+    return data.responses || [];
+}
+
+async function clearResponses(type) {
+    if (useMongo) {
+        await ensureMongoConnected();
+        await SurveyResponse.deleteMany({ type });
+        return;
+    }
+
+    const file = getTypeFile(type);
+    await fs.writeFile(file, JSON.stringify({ responses: [] }, null, 2));
+}
+
 // 6. Auth Middleware
 const checkAuth = (req, res, next) => {
     if (req.query.pwd === 'Omar2020') next();
@@ -76,21 +152,18 @@ const checkAuth = (req, res, next) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/doctors', (req, res) => res.sendFile(path.join(__dirname, 'doctors.html')));
 app.get('/patients', (req, res) => res.sendFile(path.join(__dirname, 'patients.html')));
+app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 
 app.post('/api/submit-doctor', async (req, res) => {
     try {
-        const data = await loadDataSafe(DOCTORS_FILE);
-        data.responses.push({ id: Date.now(), date: new Date().toLocaleString(), data: req.body });
-        await fs.writeFile(DOCTORS_FILE, JSON.stringify(data, null, 2));
+        await saveResponse('doctors', req.body);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/submit-patient', async (req, res) => {
     try {
-        const data = await loadDataSafe(PATIENTS_FILE);
-        data.responses.push({ id: Date.now(), date: new Date().toLocaleString(), data: req.body });
-        await fs.writeFile(PATIENTS_FILE, JSON.stringify(data, null, 2));
+        await saveResponse('patients', req.body);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -98,10 +171,10 @@ app.post('/api/submit-patient', async (req, res) => {
 // === NEW: Download CSV Route ===
 app.get('/:type/download-csv', checkAuth, async (req, res) => {
     const type = req.params.type;
-    const file = type === 'doctors' ? DOCTORS_FILE : PATIENTS_FILE;
+    if (type !== 'doctors' && type !== 'patients') return res.status(404).send('Not Found');
     
-    const data = await loadDataSafe(file);
-    const csvContent = convertToCSV(data.responses);
+    const responses = await getResponses(type);
+    const csvContent = convertToCSV(responses);
 
     res.header('Content-Type', 'text/csv');
     res.header('Content-Disposition', `attachment; filename="${type}_results.csv"`);
@@ -114,15 +187,16 @@ app.get('/:type/results', checkAuth, async (req, res) => {
     // Security check to ensure type is valid
     if (type !== 'doctors' && type !== 'patients') return res.status(404).send('Not Found');
 
-    const file = type === 'doctors' ? DOCTORS_FILE : PATIENTS_FILE;
-    const data = await loadDataSafe(file);
-    res.send(generateResultsHTML(`Résultats ${type}`, data.responses, type));
+    const responses = await getResponses(type);
+    res.send(generateResultsHTML(`Résultats ${type}`, responses, type));
 });
 
 // Clear Data
 app.get('/:type/clear-results', checkAuth, async (req, res) => {
-    const file = req.params.type === 'doctors' ? DOCTORS_FILE : PATIENTS_FILE;
-    await fs.writeFile(file, JSON.stringify({ responses: [] }, null, 2));
+    const type = req.params.type;
+    if (type !== 'doctors' && type !== 'patients') return res.status(404).send('Not Found');
+
+    await clearResponses(type);
     res.redirect(`/${req.params.type}/results?pwd=${req.query.pwd}`);
 });
 
@@ -162,11 +236,18 @@ function generateResultsHTML(title, responses, type) {
 
 if (process.env.VERCEL) {
     // Export the express app for Vercel Serverless Function
+    if (useMongo) {
+        ensureMongoConnected().catch(err => console.error('MongoDB connection failed:', err.message));
+    }
     module.exports = app;
 } else {
     // Start locally
     app.listen(PORT, async () => {
-        await initFiles();
+        if (useMongo) {
+            await ensureMongoConnected();
+        } else {
+            await initFiles();
+        }
         console.log(`\n✅ Server Started!`);
         console.log(`🏠 Home:      http://localhost:${PORT}`);
         console.log(`👨‍⚕️ Doctors:   http://localhost:${PORT}/doctors`);
