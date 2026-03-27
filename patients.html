@@ -1038,20 +1038,12 @@
             // Special validation for question 9 (ranking)
             if (currentQuestionIndex === 9) {
                 const rankingGroups = ['q9_progres', 'q9_commentaires', 'q9_rappels', 'q9_partage', 'q9_motivation'];
-                const values = [];
                 for (const group of rankingGroups) {
                     const hasSelection = currentQuestion.querySelector(`input[name="${group}"]:checked`);
                     if (!hasSelection) {
                         showError('Veuillez attribuer un rang à toutes les fonctionnalités avant de continuer.');
                         return false;
                     }
-                    values.push(parseInt(hasSelection.value, 10));
-                }
-
-                const uniqueValues = [...new Set(values)];
-                if (uniqueValues.length !== values.length) {
-                    showError('Veuillez attribuer des valeurs uniques de 1 à 5 (5 étant le plus utile).');
-                    return false;
                 }
             }
             

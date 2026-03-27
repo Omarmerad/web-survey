@@ -1122,7 +1122,6 @@
             // Validate question 10 (ranking)
             if (currentQuestionIndex === 10) {
                 const rankingGroups = ['q10_progres', 'q10_commentaires', 'q10_rappels', 'q10_partage', 'q10_motivation'];
-                const values = [];
 
                 for (const group of rankingGroups) {
                     const selected = currentQuestion.querySelector(`input[name="${group}"]:checked`);
@@ -1130,14 +1129,6 @@
                         showError('Veuillez attribuer un rang de 1 à 5 à toutes les fonctionnalités.');
                         return false;
                     }
-                    values.push(parseInt(selected.value, 10));
-                }
-                
-                // Check for duplicates
-                const uniqueValues = [...new Set(values)];
-                if (uniqueValues.length !== values.length) {
-                    showError('Veuillez attribuer des valeurs uniques de 1 à 5 (5 étant le plus utile).');
-                    return false;
                 }
             }
             
