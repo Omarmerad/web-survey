@@ -1,0 +1,24 @@
+{
+  "name": "web_survey",
+  "version": "1.0.0",
+  "description": "",
+  "main": "survey.js",
+  "scripts": {
+    "start": "node survey.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Omarmerad/web-survey.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Omarmerad/web-survey/issues"
+  },
+  "homepage": "https://github.com/Omarmerad/web-survey#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

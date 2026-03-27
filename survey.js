@@ -14,8 +14,10 @@ app.use(express.static(__dirname));
 // WARNING: Data saved in /tmp is EPHEMERAL and will be lost every time Vercel restarts the function.
 // For a production survey on Vercel, you *must* use a real Database (like MongoDB, Postgres, or Supabase).
 const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-const DOCTORS_FILE = isVercel ? path.join('/tmp', 'survey_responses_doctors.json') : path.join(__dirname, 'survey_responses_doctors.json');
-const PATIENTS_FILE = isVercel ? path.join('/tmp', 'survey_responses_patients.json') : path.join(__dirname, 'survey_responses_patients.json');
+// On Render, we can use a Persistent Disk mounted at a specific directory (e.g. /data)
+const dataDir = process.env.DATA_DIR || (isVercel ? '/tmp' : __dirname);
+const DOCTORS_FILE = path.join(dataDir, 'survey_responses_doctors.json');
+const PATIENTS_FILE = path.join(dataDir, 'survey_responses_patients.json');
 
 // 3. Helper: Safely Load Data
 async function loadDataSafe(filePath) {
