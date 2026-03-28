@@ -397,6 +397,16 @@
             margin: 0 auto;
         }
 
+        .autre-input {
+            display: none;
+            margin-top: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .autre-input.active {
+            display: block;
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -524,8 +534,8 @@
                             <label for="q3_opt3">💭 Autre</label>
                         </div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <input type="text" class="text-input" name="q3_autre" placeholder="Si autre, précisez..." style="min-height: 50px;">
+                    <div class="autre-input" id="q3_autre_input">
+                        <input type="text" class="text-input" name="q3_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -647,8 +657,8 @@
                             <label for="q8_opt4">💡 Autre</label>
                         </div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <input type="text" class="text-input" name="q8_autre" placeholder="Si autre, précisez..." style="min-height: 50px;">
+                    <div class="autre-input" id="q8_autre_input">
+                        <input type="text" class="text-input" name="q8_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -811,7 +821,7 @@
                 <div class="question" data-question="11">
                     <h2>11. Commentaires/Suggestions</h2>
                     <div class="options">
-                        <textarea class="text-input" name="q11" placeholder="Vos commentaires, suggestions ou remarques..."></textarea>
+                        <textarea class="text-input" name="q11" placeholder="Vos commentaires, suggestions ou remarques..." maxlength="1500"></textarea>
                     </div>
                 </div>
 
@@ -858,7 +868,44 @@
                     input.addEventListener('blur', saveCurrentQuestionData);
                 }
             });
+
+            setupAutreInputs();
         });
+
+        function setupAutreInputs() {
+            const config = [
+                { questionName: 'q3', triggerId: 'q3_opt3', containerId: 'q3_autre_input', inputName: 'q3_autre', type: 'radio' },
+                { questionName: 'q8', triggerId: 'q8_opt4', containerId: 'q8_autre_input', inputName: 'q8_autre', type: 'checkbox' }
+            ];
+
+            const updateAutreVisibility = (item) => {
+                const trigger = document.getElementById(item.triggerId);
+                const container = document.getElementById(item.containerId);
+                const input = document.querySelector(`input[name="${item.inputName}"]`);
+                if (!trigger || !container || !input) return;
+
+                if (trigger.checked) {
+                    container.classList.add('active');
+                } else {
+                    container.classList.remove('active');
+                    input.value = '';
+                }
+            };
+
+            config.forEach(item => {
+                const trigger = document.getElementById(item.triggerId);
+                if (!trigger) return;
+
+                if (item.type === 'radio') {
+                    const radios = document.querySelectorAll(`input[name="${item.questionName}"]`);
+                    radios.forEach(radio => radio.addEventListener('change', () => updateAutreVisibility(item)));
+                } else {
+                    trigger.addEventListener('change', () => updateAutreVisibility(item));
+                }
+
+                updateAutreVisibility(item);
+            });
+        }
 
         function startSurvey() {
             // Hide welcome screen
@@ -943,6 +990,16 @@
             if (checkboxInputs.length > 0) {
                 formData[questionKey] = Array.from(checkboxInputs).map(cb => cb.value);
             }
+
+            const autreTextInput = currentQuestion.querySelector(`input[name="${questionKey}_autre"]`);
+            if (autreTextInput) {
+                const trimmedValue = autreTextInput.value.trim();
+                if (trimmedValue) {
+                    formData[`${questionKey}_autre`] = trimmedValue;
+                } else {
+                    delete formData[`${questionKey}_autre`];
+                }
+            }
             
             // Handle text inputs and textareas
             const textInputs = currentQuestion.querySelectorAll('input[type="text"], textarea');
@@ -950,13 +1007,6 @@
                 formData[questionKey] = textInputs[0].value;
             }
 
-            // Handle additional text inputs for "other" options
-            const otherInputs = currentQuestion.querySelectorAll('input[type="text"]');
-            otherInputs.forEach(input => {
-                if (input.value.trim() !== '') {
-                    formData[input.name] = input.value;
-                }
-            });
         }
 
         function restoreQuestionData(questionNumber) {
@@ -1001,6 +1051,19 @@
                     if (textInput) textInput.value = value;
                 }
             }
+
+            const autreContainer = currentQuestion.querySelector('.autre-input');
+            const autreInput = currentQuestion.querySelector(`input[name="${questionKey}_autre"]`);
+            if (autreContainer && autreInput) {
+                const checkedRadio = currentQuestion.querySelector('input[type="radio"]:checked');
+                const hasAutreRadio = checkedRadio && checkedRadio.value.includes('autre');
+                const hasAutreCheckbox = Array.from(currentQuestion.querySelectorAll('input[type="checkbox"]:checked'))
+                    .some(cb => cb.value.includes('autre'));
+
+                if (hasAutreRadio || hasAutreCheckbox || autreInput.value.trim()) {
+                    autreContainer.classList.add('active');
+                }
+            }
         }
 
         function validateCurrentQuestion() {
@@ -1019,6 +1082,14 @@
                         showError('Veuillez sélectionner une réponse avant de continuer.');
                         return false;
                     }
+
+                    if (hasSelection.value.includes('autre')) {
+                        const autreInput = currentQuestion.querySelector(`input[name="q${currentQuestionIndex}_autre"]`);
+                        if (autreInput && !autreInput.value.trim()) {
+                            showError('Veuillez préciser votre réponse dans le champ "Autre".');
+                            return false;
+                        }
+                    }
                 }
             }
             
@@ -1031,6 +1102,16 @@
                     if (!hasSelection) {
                         showError('Veuillez sélectionner au moins une option avant de continuer.');
                         return false;
+                    }
+
+                    const hasAutreCheckbox = Array.from(currentQuestion.querySelectorAll('input[type="checkbox"]:checked'))
+                        .some(cb => cb.value.includes('autre'));
+                    if (hasAutreCheckbox) {
+                        const autreInput = currentQuestion.querySelector(`input[name="q${currentQuestionIndex}_autre"]`);
+                        if (autreInput && !autreInput.value.trim()) {
+                            showError('Veuillez préciser votre réponse dans le champ "Autre".');
+                            return false;
+                        }
                     }
                 }
             }
@@ -1131,6 +1212,11 @@
             
             // Reset form inputs
             document.getElementById('surveyForm').reset();
+
+            // Hide "Autre" text inputs
+            document.querySelectorAll('.autre-input').forEach(input => {
+                input.classList.remove('active');
+            });
             
             // Hide completion screen and questions
             document.getElementById('completionScreen').classList.remove('active');

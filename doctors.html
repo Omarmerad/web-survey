@@ -444,15 +444,23 @@
             <h1>🏥 Questionnaire sur la rééducation de la main</h1>
             <div class="header-description">
                 <p><strong>Bienvenue !</strong></p>
-                <p>Nous sommes étudiants à Polytech Nantes et travaillons sur une application de suivi de la mobilité de la main.</p>
+                <p>Nous sommes étudiants ingénieurs à Polytech Nantes et travaillons sur un projet portant sur l'analyse du mouvement de la main ainsi que sur le suivi des exercices de rééducation.</p>
+                <p>Dans le cadre de ce projet, nous élaborons actuellement un questionnaire qui sera diffusé ultérieurement auprès de professionnels de rééducation (kinésithérapeutes, ergothérapeutes, médecins) ainsi qu'auprès de patients.</p>
+
+                <p><strong>Objectif de ce questionnaire :</strong></p>
+                <p>Cet échange n’a pas pour objectif premier de recueillir vos réponses définitives, mais de valider la pertinence et la compréhension des questions proposées ; toutefois, si cela permet également d’obtenir des retours de fond, cela serait un plus.</p>
+
+                <p><strong>Nous souhaitons notamment recueillir votre avis sur :</strong></p>
                 <ul style="text-align: left; margin: 20px 0;">
-                <li>L'application utilise la caméra du smartphone pour analyser les mouvements de la main.</li>
-                <li>Elle vise à faciliter le suivi de la rééducation post-AVC.</li>
-                <li>Elle doit permettre un meilleur accompagnement à distance des patients.</li>
+                    <li>la clarté et la compréhension des questions,</li>
+                    <li>leur adéquation avec votre pratique clinique réelle,</li>
+                    <li>l'identification d'éventuels éléments manquants,</li>
+                    <li>la pertinence des thématiques abordées.</li>
                 </ul>
-                <p>Ce questionnaire est destiné aux kinésithérapeutes spécialisés en rééducation post-AVC.</p>
-                <p>Vos réponses nous permettront de concevoir un outil simple, efficace et adapté à vos besoins ainsi qu'à ceux de vos patients.</p>
-                <p><em>Toutes les informations recueillies resteront strictement confidentielles et ne seront utilisées que dans le cadre de ce projet.</em></p>
+
+                <p>Votre retour nous permettra d'améliorer ce questionnaire avant sa diffusion dans le cadre d'une étude. Pour cela, une section commentaire est disponible à la fin du questionnaire afin de recueillir un retour sur les différentes questions.</p>
+                <p>Les informations recueillies resteront strictement confidentielles et seront utilisées uniquement dans le cadre de ce projet académique.</p>
+                <p>Nous vous remercions sincèrement pour le temps accordé et pour votre contribution.</p>
             </div>
             <button class="start-btn" onclick="startSurvey()">Commencer le questionnaire</button>
         </div>
@@ -488,7 +496,7 @@
                         </div>
                     </div>
                     <div class="autre-input" id="q1_autre_input">
-                        <input type="text" class="text-input" name="q1_autre" placeholder="Veuillez préciser..." style="min-height: 50px;">
+                        <input type="text" class="text-input" name="q1_autre" placeholder="Veuillez préciser..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -516,6 +524,9 @@
                             <input type="checkbox" name="q2" id="q2_opt5" value="autre-q2">
                             <label for="q2_opt5">💡 Autre</label>
                         </div>
+                    </div>
+                    <div class="autre-input" id="q2_autre_input">
+                        <input type="text" class="text-input" name="q2_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -545,7 +556,7 @@
                         </div>
                     </div>
                     <div class="autre-input" id="q3_autre_input">
-                        <input type="text" class="text-input" name="q3_autre" placeholder="Veuillez préciser..." style="min-height: 50px;">
+                        <input type="text" class="text-input" name="q3_autre" placeholder="Veuillez préciser..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -623,6 +634,9 @@
                             <label for="q7_opt4">💭 Autre</label>
                         </div>
                     </div>
+                    <div class="autre-input" id="q7_autre_input">
+                        <input type="text" class="text-input" name="q7_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
+                    </div>
                 </div>
 
                 <!-- Question 8 -->
@@ -645,6 +659,9 @@
                             <input type="radio" name="q8" id="q8_opt4" value="autres-avantages">
                             <label for="q8_opt4">📲 Autres</label>
                         </div>
+                    </div>
+                    <div class="autre-input" id="q8_autre_input">
+                        <input type="text" class="text-input" name="q8_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
 
@@ -672,6 +689,9 @@
                             <input type="checkbox" name="q9" id="q9_opt5" value="autre-donnees">
                             <label for="q9_opt5">💡 Autre</label>
                         </div>
+                    </div>
+                    <div class="autre-input" id="q9_autre_input">
+                        <input type="text" class="text-input" name="q9_autre" placeholder="Si autre, précisez..." style="min-height: 50px;" maxlength="300">
                     </div>
                 </div>
                 
@@ -844,7 +864,7 @@
                 <div class="question" data-question="12">
                     <h2>Commentaires/suggestions</h2>
                     <div class="options">
-                        <textarea class="text-input" name="q12" placeholder="Vos commentaires, suggestions ou remarques..."></textarea>
+                        <textarea class="text-input" name="q12" placeholder="Vos commentaires, suggestions ou remarques..." maxlength="1500"></textarea>
                     </div>
                 </div>
 
@@ -895,30 +915,41 @@
         });
 
         function setupAutreInputs() {
-            // Question 1 "Autre" option
-            const q1AutreInput = document.getElementById('q1_autre_input');
-            const q1AutreRadio = document.getElementById('q1_opt5');
-            
-            q1AutreRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    q1AutreInput.classList.add('active');
-                } else {
-                    q1AutreInput.classList.remove('active');
-                    document.querySelector('input[name="q1_autre"]').value = '';
-                }
-            });
+            const config = [
+                { questionName: 'q1', triggerId: 'q1_opt5', containerId: 'q1_autre_input', inputName: 'q1_autre', type: 'radio' },
+                { questionName: 'q2', triggerId: 'q2_opt5', containerId: 'q2_autre_input', inputName: 'q2_autre', type: 'checkbox' },
+                { questionName: 'q3', triggerId: 'q3_opt5', containerId: 'q3_autre_input', inputName: 'q3_autre', type: 'radio' },
+                { questionName: 'q7', triggerId: 'q7_opt4', containerId: 'q7_autre_input', inputName: 'q7_autre', type: 'checkbox' },
+                { questionName: 'q8', triggerId: 'q8_opt4', containerId: 'q8_autre_input', inputName: 'q8_autre', type: 'radio' },
+                { questionName: 'q9', triggerId: 'q9_opt5', containerId: 'q9_autre_input', inputName: 'q9_autre', type: 'checkbox' }
+            ];
 
-            // Question 3 "Autre" option
-            const q3AutreInput = document.getElementById('q3_autre_input');
-            const q3AutreRadio = document.getElementById('q3_opt5');
-            
-            q3AutreRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    q3AutreInput.classList.add('active');
+            const updateAutreVisibility = (item) => {
+                const trigger = document.getElementById(item.triggerId);
+                const container = document.getElementById(item.containerId);
+                const input = document.querySelector(`input[name="${item.inputName}"]`);
+                if (!trigger || !container || !input) return;
+
+                if (trigger.checked) {
+                    container.classList.add('active');
                 } else {
-                    q3AutreInput.classList.remove('active');
-                    document.querySelector('input[name="q3_autre"]').value = '';
+                    container.classList.remove('active');
+                    input.value = '';
                 }
+            };
+
+            config.forEach(item => {
+                const trigger = document.getElementById(item.triggerId);
+                if (!trigger) return;
+
+                if (item.type === 'radio') {
+                    const radios = document.querySelectorAll(`input[name="${item.questionName}"]`);
+                    radios.forEach(radio => radio.addEventListener('change', () => updateAutreVisibility(item)));
+                } else {
+                    trigger.addEventListener('change', () => updateAutreVisibility(item));
+                }
+
+                updateAutreVisibility(item);
             });
         }
 
@@ -1013,6 +1044,16 @@
             if (checkboxInputs.length > 0) {
                 formData[questionKey] = Array.from(checkboxInputs).map(cb => cb.value);
             }
+
+            const autreTextInput = currentQuestion.querySelector(`input[name="${questionKey}_autre"]`);
+            if (autreTextInput) {
+                const trimmedValue = autreTextInput.value.trim();
+                if (trimmedValue) {
+                    formData[`${questionKey}_autre`] = trimmedValue;
+                } else {
+                    delete formData[`${questionKey}_autre`];
+                }
+            }
             
             // Handle text inputs and textareas
             const textInputs = currentQuestion.querySelectorAll('input[type="text"], textarea');
@@ -1040,7 +1081,7 @@
                     radioInput.checked = true;
                     
                     // If "Autre" is selected, show the text input and restore its value
-                    if (savedData === 'autre') {
+                    if (savedData.includes('autre')) {
                         const autreInput = currentQuestion.querySelector('.autre-input');
                         if (autreInput) {
                             autreInput.classList.add('active');
@@ -1082,6 +1123,19 @@
                     autreInput.value = formData[`${questionKey}_autre`];
                 }
             }
+
+            const autreContainer = currentQuestion.querySelector('.autre-input');
+            const autreInput = currentQuestion.querySelector(`input[name="${questionKey}_autre"]`);
+            if (autreContainer && autreInput) {
+                const checkedRadio = currentQuestion.querySelector('input[type="radio"]:checked');
+                const hasAutreRadio = checkedRadio && checkedRadio.value.includes('autre');
+                const hasAutreCheckbox = Array.from(currentQuestion.querySelectorAll('input[type="checkbox"]:checked'))
+                    .some(cb => cb.value.includes('autre'));
+
+                if (hasAutreRadio || hasAutreCheckbox || autreInput.value.trim()) {
+                    autreContainer.classList.add('active');
+                }
+            }
         }
 
         function validateCurrentQuestion() {
@@ -1107,6 +1161,14 @@
                         return false;
                     }
                 }
+
+                if (hasSelection.value.includes('autre')) {
+                    const autreInput = currentQuestion.querySelector(`input[name="q${currentQuestionIndex}_autre"]`);
+                    if (autreInput && !autreInput.value.trim()) {
+                        showError('Veuillez préciser votre réponse dans le champ "Autre".');
+                        return false;
+                    }
+                }
             }
             
             // Check for required checkboxes
@@ -1116,6 +1178,16 @@
                 if (!hasSelection) {
                     showError('Veuillez sélectionner au moins une option avant de continuer.');
                     return false;
+                }
+
+                const hasAutreCheckbox = Array.from(currentQuestion.querySelectorAll('input[type="checkbox"]:checked'))
+                    .some(cb => cb.value.includes('autre'));
+                if (hasAutreCheckbox) {
+                    const autreInput = currentQuestion.querySelector(`input[name="q${currentQuestionIndex}_autre"]`);
+                    if (autreInput && !autreInput.value.trim()) {
+                        showError('Veuillez préciser votre réponse dans le champ "Autre".');
+                        return false;
+                    }
                 }
             }
             

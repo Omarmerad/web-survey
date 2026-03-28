@@ -21,6 +21,7 @@ const DOCTORS_FILE = path.join(dataDir, 'survey_responses_doctors.json');
 const PATIENTS_FILE = path.join(dataDir, 'survey_responses_patients.json');
 const   MONGODB_URI = process.env.MONGODB_URI;
 const useMongo = Boolean(MONGODB_URI);
+const MAX_TEXT_LENGTH = 1500;
 
 let mongoConnectPromise = null;
 
@@ -133,8 +134,29 @@ function getTypeFile(type) {
     return type === 'doctors' ? DOCTORS_FILE : PATIENTS_FILE;
 }
 
+function sanitizePayload(value) {
+    if (typeof value === 'string') {
+        return value.slice(0, MAX_TEXT_LENGTH);
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(sanitizePayload);
+    }
+
+    if (value && typeof value === 'object') {
+        const sanitized = {};
+        for (const [key, val] of Object.entries(value)) {
+            sanitized[key] = sanitizePayload(val);
+        }
+        return sanitized;
+    }
+
+    return value;
+}
+
 async function saveResponse(type, body) {
-    const payload = { id: Date.now(), date: new Date().toLocaleString(), data: body };
+    const sanitizedBody = sanitizePayload(body);
+    const payload = { id: Date.now(), date: new Date().toLocaleString(), data: sanitizedBody };
 
     if (useMongo) {
         await ensureMongoConnected();
